@@ -5,7 +5,7 @@ import { Header } from '../components/header';
 export const metadata = {
     title: {
         template: '%s | Netlify',
-        default: 'Netlify Starter'
+        default: 'Rogelio Macedo'
     }
 };
 
@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
     return (
         <html lang="en" data-theme="lofi">
             <head>
-                <link rel="icon" href="/favicon.svg" sizes="any" />
+                <link rel="icon" href="/favicon.png" sizes="any" />
                 <title>Rogelio Macedo</title>
             </head>
             <body className="antialiased text-white bg-blue-900">
