@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
+    accessTokenPage,
     callbackPreflight,
     getYahooConfig,
     PRIVATE_HEADERS,
@@ -34,15 +35,13 @@ export async function GET(request) {
     if (preflight) return result(preflight.message, preflight.status);
 
     const outcome = await verifyYahooFantasyRead(params.get('code'), config);
-    if (outcome.outcome === 'verified') {
-        return result('Yahoo Fantasy access verified. No tokens or data were saved.', 200);
+    if (outcome.accessToken) {
+        const response = result(accessTokenPage(outcome.accessToken, outcome), 200);
+        response.headers.set('Content-Type', 'text/html; charset=utf-8');
+        return response;
     }
     if (outcome.outcome === 'token_error') {
         return result('Yahoo token exchange failed. Check the redirect URI and app credentials.', 502);
     }
-    if (outcome.outcome === 'fantasy_http_error') {
-        const detail = outcome.httpStatus ? ` HTTP ${outcome.httpStatus}.` : ' a non-success HTTP response.';
-        return result(`Yahoo issued a token, but the Fantasy API returned${detail}`, 502);
-    }
-    return result('Yahoo issued a token, but the Fantasy API request did not complete.', 502);
+    return result('Yahoo authorization did not complete.', 502);
 }

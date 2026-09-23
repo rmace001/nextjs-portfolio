@@ -18,7 +18,7 @@ const LOGIN_PAGE = `<!doctype html>
 <head><meta charset="utf-8"><title>Connect Yahoo Fantasy</title></head>
 <body>
   <h1>Connect Yahoo Fantasy</h1>
-  <p>Owner-only, one-time connection test. No Yahoo tokens will be saved.</p>
+  <p>Owner-only, one-time connection test. The callback will show only the short-lived access token; no Yahoo tokens will be saved.</p>
   <form method="post" action="/api/yahoo/connect">
     <label>Admin password <input type="password" name="password" autocomplete="current-password" required></label>
     <button type="submit">Continue to Yahoo</button>
