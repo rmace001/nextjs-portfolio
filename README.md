@@ -1,8 +1,8 @@
-# Next.js on Netlify Platform Starter
+# Next.js portfolio on Netlify
 
 [Live Demo](https://nextjs-platform-starter.netlify.app/)
 
-A modern starter based on Next.js 14 (App Router), Tailwind, daisyUI, and [Netlify Core Primitives](https://docs.netlify.com/core/overview/#develop) (Edge Functions, Image CDN, Blob Store).
+A portfolio based on Next.js 16 (App Router), Tailwind CSS 4, daisyUI 5, and [Netlify platform primitives](https://docs.netlify.com/start/core-concepts/primitives/) (Edge Functions, Image CDN, and Blobs).
 
 In this site, Netlify Core Primitives are used both implictly for running Next.js features (e.g. Route Handlers, image optimization via `next/image`, and more) and also explicitly by the user code. 
 
@@ -10,9 +10,9 @@ Implicit usage means you're using any Next.js functionality and everything "just
 
 ## Deploying to Netlify
 
-This site requires [Netlify Next Runtime v5](https://docs.netlify.com/frameworks/next-js/overview/) for full functionality. That version is now being gradually rolled out to all Netlify accounts. 
+Netlify's [Next.js adapter](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/) handles Route Handlers and other server-side features. The project pins Node.js 24 in `.nvmrc` and uses webpack for production builds.
 
-After deploying via the button below, please visit the **Site Overview** page for your new site to check whether it is already using the v5 runtime. If not, you'll be prompted to opt-in to to v5.
+The phased Yahoo Fantasy OAuth proof of concept is documented in [docs/yahoo-oauth-poc-plan.md](docs/yahoo-oauth-poc-plan.md). No Yahoo credentials belong in this repository.
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/netlify-templates/next-platform-starter)
 
@@ -39,5 +39,4 @@ netlify dev
 ```
 
 If your browser doesn't navigate to the site automatically, visit [localhost:8888](http://localhost:8888).
-
 

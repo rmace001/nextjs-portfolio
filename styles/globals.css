@@ -1,8 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;800&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin 'daisyui' {
+    themes: lofi --default;
+}
+
+@plugin 'daisyui/theme' {
+    name: 'lofi';
+    --color-primary: #2bdcd2;
+    --color-primary-content: #171717;
+    --color-secondary: #016968;
+    --color-info: #2bdcd2;
+    --color-info-content: #171717;
+}
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@utility bg-grid-pattern {
+    background-image: linear-gradient(to bottom, transparent, var(--color-neutral-950)), url('/images/noise.png');
+}
 
 @layer base {
     :not(pre) > code {
