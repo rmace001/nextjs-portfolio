@@ -87,7 +87,7 @@ test('exchanges the code server-side and makes one authenticated Fantasy read', 
         return { ok: true, body: { cancel: async () => {} } };
     };
 
-    assert.equal(await verifyYahooFantasyRead('fake-code', config, fakeFetch), 'verified');
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fakeFetch), { outcome: 'verified' });
     assert.equal(calls.length, 2);
     assert.equal(calls[0].url, 'https://api.login.yahoo.com/oauth2/get_token');
     assert.equal(calls[0].options.body.get('code'), 'fake-code');
@@ -99,30 +99,58 @@ test('exchanges the code server-side and makes one authenticated Fantasy read', 
 test('fails closed on token and Fantasy errors without returning upstream data', async () => {
     let calls = 0;
     const tokenFailure = async () => { calls++; return { ok: false, status: 401 }; };
-    assert.equal(await verifyYahooFantasyRead('fake-code', config, tokenFailure), 'token_error');
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, tokenFailure), { outcome: 'token_error' });
     assert.equal(calls, 1);
 
     const malformedToken = async () => ({ ok: true, json: async () => ({ error: 'fake-upstream-error' }) });
-    assert.equal(await verifyYahooFantasyRead('fake-code', config, malformedToken), 'token_error');
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, malformedToken), { outcome: 'token_error' });
 
     let fantasyCalls = 0;
     const fantasyFailure = async () => {
         fantasyCalls++;
         return fantasyCalls === 1
             ? { ok: true, json: async () => ({ access_token: 'fake-access-token' }) }
-            : { ok: false, body: { cancel: async () => {} } };
+            : { ok: false, status: 403, body: { cancel: async () => {} } };
     };
-    assert.equal(await verifyYahooFantasyRead('fake-code', config, fantasyFailure), 'fantasy_error');
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fantasyFailure), {
+        outcome: 'fantasy_http_error', httpStatus: 403
+    });
     assert.equal(fantasyCalls, 2);
-    assert.equal(await verifyYahooFantasyRead('fake-code', config, async () => { throw new Error('fake sensitive error'); }), 'token_error');
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, async () => {
+        throw new Error('fake sensitive error');
+    }), { outcome: 'token_error' });
     let networkCalls = 0;
     const fantasyNetworkFailure = async () => {
         networkCalls++;
         if (networkCalls === 1) return { ok: true, json: async () => ({ access_token: 'fake-access-token' }) };
         throw new Error('fake private Fantasy response');
     };
-    assert.equal(await verifyYahooFantasyRead('fake-code', config, fantasyNetworkFailure), 'fantasy_error');
-    assert.equal(await verifyYahooFantasyRead('', config, tokenFailure), 'token_error');
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fantasyNetworkFailure), {
+        outcome: 'fantasy_request_error'
+    });
+    assert.deepEqual(await verifyYahooFantasyRead('', config, tokenFailure), { outcome: 'token_error' });
+});
+
+test('body cleanup failures do not hide the Fantasy HTTP status or expose response data', async () => {
+    const fakeFetch = async (url) => url.includes('/get_token')
+        ? { ok: true, json: async () => ({ access_token: 'fake-access-token' }) }
+        : {
+            ok: true,
+            status: 200,
+            body: { cancel: async () => { throw new Error('fake private response body'); } }
+        };
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fakeFetch), { outcome: 'verified' });
+
+    const failingFetch = async (url) => url.includes('/get_token')
+        ? { ok: true, json: async () => ({ access_token: 'fake-access-token' }) }
+        : {
+            ok: false,
+            status: 429,
+            body: { cancel: async () => { throw new Error('fake private response body'); } }
+        };
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, failingFetch), {
+        outcome: 'fantasy_http_error', httpStatus: 429
+    });
 });
 
 test('responses are explicitly private and do not forward referrers', () => {
