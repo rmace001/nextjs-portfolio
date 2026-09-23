@@ -4,6 +4,7 @@ import {
     authorizationUrl,
     callbackPreflight,
     createState,
+    FORM_HEADERS,
     getYahooConfig,
     isProductionOrigin,
     PRIVATE_HEADERS,
@@ -130,5 +131,7 @@ test('fails closed on token and Fantasy errors without returning upstream data',
 test('responses are explicitly private and do not forward referrers', () => {
     assert.match(PRIVATE_HEADERS['Cache-Control'], /no-store/);
     assert.equal(PRIVATE_HEADERS['Referrer-Policy'], 'no-referrer');
+    assert.equal(FORM_HEADERS['Referrer-Policy'], 'same-origin');
+    assert.equal(FORM_HEADERS['Cache-Control'], PRIVATE_HEADERS['Cache-Control']);
     assert.match(PRIVATE_HEADERS['Content-Security-Policy'], /frame-ancestors 'none'/);
 });

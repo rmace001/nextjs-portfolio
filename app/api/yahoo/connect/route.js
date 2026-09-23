@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import {
     authorizationUrl,
     createState,
+    FORM_HEADERS,
     getYahooConfig,
     isProductionOrigin,
     PRIVATE_HEADERS,
@@ -38,7 +39,7 @@ export async function GET(request) {
     if (!getYahooConfig()) return message('Yahoo connection is not configured.', 503);
 
     return new NextResponse(LOGIN_PAGE, {
-        headers: { ...PRIVATE_HEADERS, 'Content-Type': 'text/html; charset=utf-8' }
+        headers: { ...FORM_HEADERS, 'Content-Type': 'text/html; charset=utf-8' }
     });
 }
 
