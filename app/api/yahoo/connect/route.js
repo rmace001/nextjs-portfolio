@@ -4,7 +4,6 @@ import {
     createState,
     FORM_HEADERS,
     getYahooConfig,
-    isProductionOrigin,
     PRIVATE_HEADERS,
     STATE_COOKIE,
     STATE_MAX_AGE_SECONDS,
@@ -34,8 +33,7 @@ function message(text, status) {
     });
 }
 
-export async function GET(request) {
-    if (!isProductionOrigin(request.url)) return message('Not found.', 404);
+export async function GET() {
     if (!getYahooConfig()) return message('Yahoo connection is not configured.', 503);
 
     return new NextResponse(LOGIN_PAGE, {
@@ -44,8 +42,6 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-    if (!isProductionOrigin(request.url)) return message('Not found.', 404);
-
     const config = getYahooConfig();
     if (!config) return message('Yahoo connection is not configured.', 503);
 

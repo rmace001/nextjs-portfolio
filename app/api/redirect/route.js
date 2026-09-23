@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import {
     callbackPreflight,
     getYahooConfig,
-    isProductionOrigin,
     PRIVATE_HEADERS,
     STATE_COOKIE,
     verifyYahooFantasyRead
@@ -27,8 +26,6 @@ function result(text, status) {
 }
 
 export async function GET(request) {
-    if (!isProductionOrigin(request.url)) return result('Not found.', 404);
-
     const config = getYahooConfig();
     if (!config) return result('Yahoo connection is not configured.', 503);
 
