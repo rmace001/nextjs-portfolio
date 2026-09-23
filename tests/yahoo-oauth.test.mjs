@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+    accessTokenPage,
     authorizationUrl,
     callbackPreflight,
     createState,
@@ -87,13 +88,26 @@ test('exchanges the code server-side and makes one authenticated Fantasy read', 
         return { ok: true, body: { cancel: async () => {} } };
     };
 
-    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fakeFetch), { outcome: 'verified' });
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fakeFetch), {
+        outcome: 'verified', accessToken: 'fake-access-token'
+    });
     assert.equal(calls.length, 2);
     assert.equal(calls[0].url, 'https://api.login.yahoo.com/oauth2/get_token');
     assert.equal(calls[0].options.body.get('code'), 'fake-code');
     assert.equal(calls[0].options.body.get('redirect_uri'), REDIRECT_URI);
     assert.equal(calls[1].url, 'https://fantasysports.yahooapis.com/fantasy/v2/users;use_login=1/games?format=json');
     assert.equal(calls[1].options.headers.Authorization, 'Bearer fake-access-token');
+});
+
+test('callback page displays only an HTML-escaped access token and a safe read result', () => {
+    const token = 'fake<&>"\'-access-token';
+    const page = accessTokenPage(token, { outcome: 'fantasy_http_error', httpStatus: 403 });
+    assert.match(page, /Yahoo Fantasy read returned HTTP 403/);
+    assert.match(page, /fake&lt;&amp;&gt;&quot;&#39;-access-token/);
+    assert.equal(page.includes(token), false);
+    assert.equal(page.includes('fake-refresh-token'), false);
+    assert.equal(page.includes('<script'), false);
+    assert.match(page, /will not show the token again if reloaded/);
 });
 
 test('fails closed on token and Fantasy errors without returning upstream data', async () => {
@@ -113,7 +127,7 @@ test('fails closed on token and Fantasy errors without returning upstream data',
             : { ok: false, status: 403, body: { cancel: async () => {} } };
     };
     assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fantasyFailure), {
-        outcome: 'fantasy_http_error', httpStatus: 403
+        outcome: 'fantasy_http_error', httpStatus: 403, accessToken: 'fake-access-token'
     });
     assert.equal(fantasyCalls, 2);
     assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, async () => {
@@ -126,7 +140,7 @@ test('fails closed on token and Fantasy errors without returning upstream data',
         throw new Error('fake private Fantasy response');
     };
     assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fantasyNetworkFailure), {
-        outcome: 'fantasy_request_error'
+        outcome: 'fantasy_request_error', accessToken: 'fake-access-token'
     });
     assert.deepEqual(await verifyYahooFantasyRead('', config, tokenFailure), { outcome: 'token_error' });
 });
@@ -139,7 +153,9 @@ test('body cleanup failures do not hide the Fantasy HTTP status or expose respon
             status: 200,
             body: { cancel: async () => { throw new Error('fake private response body'); } }
         };
-    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fakeFetch), { outcome: 'verified' });
+    assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, fakeFetch), {
+        outcome: 'verified', accessToken: 'fake-access-token'
+    });
 
     const failingFetch = async (url) => url.includes('/get_token')
         ? { ok: true, json: async () => ({ access_token: 'fake-access-token' }) }
@@ -149,13 +165,15 @@ test('body cleanup failures do not hide the Fantasy HTTP status or expose respon
             body: { cancel: async () => { throw new Error('fake private response body'); } }
         };
     assert.deepEqual(await verifyYahooFantasyRead('fake-code', config, failingFetch), {
-        outcome: 'fantasy_http_error', httpStatus: 429
+        outcome: 'fantasy_http_error', httpStatus: 429, accessToken: 'fake-access-token'
     });
 });
 
 test('responses are explicitly private and do not forward referrers', () => {
     assert.match(PRIVATE_HEADERS['Cache-Control'], /no-store/);
+    assert.equal(PRIVATE_HEADERS['CDN-Cache-Control'], 'no-store');
     assert.equal(PRIVATE_HEADERS['Referrer-Policy'], 'no-referrer');
+    assert.match(PRIVATE_HEADERS['X-Robots-Tag'], /noarchive/);
     assert.equal(FORM_HEADERS['Referrer-Policy'], 'same-origin');
     assert.equal(FORM_HEADERS['Cache-Control'], PRIVATE_HEADERS['Cache-Control']);
     assert.match(PRIVATE_HEADERS['Content-Security-Policy'], /frame-ancestors 'none'/);
