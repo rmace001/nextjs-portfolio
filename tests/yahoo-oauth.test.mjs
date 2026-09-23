@@ -6,7 +6,6 @@ import {
     createState,
     FORM_HEADERS,
     getYahooConfig,
-    isProductionOrigin,
     PRIVATE_HEADERS,
     REDIRECT_URI,
     stateMatches,
@@ -32,8 +31,6 @@ test('requires complete server-side configuration and the exact callback', () =>
     assert.equal(getYahooConfig({ ...env, YAHOO_REDIRECT_URI: 'https://other.example/api/redirect' }), null);
     assert.equal(getYahooConfig({ ...env, YAHOO_ADMIN_PASSWORD: 'short' }), null);
     assert.equal(getYahooConfig({ YAHOO_REDIRECT_URI: REDIRECT_URI }), null);
-    assert.equal(isProductionOrigin('https://rogeliomc.com/api/yahoo/connect'), true);
-    assert.equal(isProductionOrigin('https://preview.netlify.app/api/yahoo/connect'), false);
 });
 
 test('checks admin password and OAuth state without accepting missing or malformed values', () => {
