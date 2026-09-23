@@ -23,10 +23,9 @@ export function NewShape(props) {
     };
 
     useEffect(() => {
-        if (!blobData) {
-            randomizeBlob();
-        }
-    }, [blobData]);
+        const frame = requestAnimationFrame(() => setBlobData(generateBlob()));
+        return () => cancelAnimationFrame(frame);
+    }, []);
 
     return (
         <div className="flex flex-col items-center justify-center w-full gap-2">
