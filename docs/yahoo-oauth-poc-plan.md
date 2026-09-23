@@ -21,6 +21,17 @@ Exit condition: the existing portfolio still builds and behaves as before on a N
 
 Exit condition: the callback route is reachable at the exact production URL, and required secrets are configured in Netlify. The route can exist before Yahoo registration is changed.
 
+### Phase 2 deployment runbook
+
+The routes are implemented in `app/api/yahoo/connect/route.js` and `app/api/redirect/route.js`. They only operate on the production origin, not on deploy-preview domains. There is no token persistence and no Fantasy data is sent to the browser.
+
+1. In Netlify **Project configuration → Environment variables**, add the four names from `.env.example` for the production deploy context. If your plan supports variable scopes, include **Functions**. Set `YAHOO_REDIRECT_URI` to exactly `https://rogeliomc.com/api/redirect`. Set `YAHOO_ADMIN_PASSWORD` to a unique, randomly generated password of at least 16 characters. Do not use `NEXT_PUBLIC_` names, put values in `netlify.toml`, or commit a populated `.env` file.
+2. Keep sensitive variables unavailable to untrusted deploy previews. The code rejects preview origins, but build/runtime access to secrets should also be limited in Netlify's settings.
+3. Deploy the routes to production. Visit `https://rogeliomc.com/api/yahoo/connect`; it should show the owner-password form. A direct visit to `https://rogeliomc.com/api/redirect` should show a safe state-validation error, not a 404. Do not paste a Yahoo authorization code into the URL for testing.
+4. Only after the production callback is reachable, update the Yahoo application registration and run Phase 3. Use the same redirect URI in Yahoo and Netlify. The Yahoo app must have Fantasy Sports read permission.
+
+The password form sends a same-origin POST over HTTPS. A valid password starts a ten-minute OAuth attempt. The callback compares Yahoo's returned `state` to an HTTP-only, Secure, SameSite=Lax cookie, exchanges the code server-side, performs one read-only Fantasy `users/.../games` request, and discards the access and refresh tokens. Its response contains only a success or safe stage-specific failure message, never credentials, tokens, authorization codes, or Fantasy data.
+
 ## Phase 3 — Register and run the one-shot proof
 
 - Update the Yahoo application's redirect URI to `https://rogeliomc.com/api/redirect` and confirm Fantasy Sports read permission.
