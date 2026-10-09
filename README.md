@@ -12,7 +12,7 @@ Implicit usage means you're using any Next.js functionality and everything "just
 
 Netlify's [Next.js adapter](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/) handles Route Handlers and other server-side features. The project pins Node.js 24 in `.nvmrc` and uses webpack for production builds.
 
-The phased Yahoo Fantasy OAuth proof of concept is documented in [docs/yahoo-oauth-poc-plan.md](docs/yahoo-oauth-poc-plan.md). No Yahoo credentials belong in this repository.
+The Yahoo Fantasy OAuth proof of concept is complete: the production callback completed an authenticated Fantasy API read and unblocked the companion Front Office local sync. [The plan](docs/yahoo-oauth-poc-plan.md) records the completed proof and the remaining work to host an owner-only dashboard on `rogeliomc.com`. No Yahoo credentials belong in this repository.
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/netlify-templates/next-platform-starter)
 
@@ -39,5 +39,4 @@ netlify dev
 ```
 
 If your browser doesn't navigate to the site automatically, visit [localhost:8888](http://localhost:8888).
-
 
