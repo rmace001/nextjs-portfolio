@@ -42,4 +42,6 @@ test('production requests use the registered domain and private responses do not
     assert.match(PRIVATE_PAGE_HEADERS['Cache-Control'], /no-store/);
     assert.equal(PRIVATE_PAGE_HEADERS['CDN-Cache-Control'], 'no-store');
     assert.match(PRIVATE_PAGE_HEADERS['X-Robots-Tag'], /noindex/);
+    assert.match(PRIVATE_PAGE_HEADERS['Content-Security-Policy'], /form-action 'self' https:\/\/yahoo\.com https:\/\/\*\.yahoo\.com/);
+    assert.doesNotMatch(PRIVATE_PAGE_HEADERS['Content-Security-Policy'], /form-action \*/);
 });
