@@ -1,19 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createSession, expectedRequestOrigin, getFrontOfficeConfig, PRIVATE_PAGE_HEADERS, SESSION_COOKIE, SESSION_SECONDS, validSession } from '../../lib/front-office-session.mjs';
-import { validAdminPassword } from '../../lib/yahoo-oauth.mjs';
+import { getYahooConfig, validAdminPassword } from '../../lib/yahoo-oauth.mjs';
+import { currentAccess, HostedAccessError } from '../../lib/yahoo-hosted-access.mjs';
+import { fetchYahooLeague, YahooDataError } from '../../lib/yahoo-league.mjs';
+import { dashboardPage, errorPage, loginPage, reconnectPage } from '../../lib/front-office-view.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const LOGIN_PAGE = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Front Office sign in</title></head>
-<body><main><h1>Fantasy Football Front Office</h1><p>Sign in to view your private dashboard.</p>
-<form method="post" action="/front-office"><label>Owner password <input type="password" name="password" autocomplete="current-password" required></label><button type="submit">Sign in</button></form></main></body></html>`;
-
-const PRIVATE_PAGE = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fantasy Football Front Office</title></head>
-<body><main><h1>Fantasy Football Front Office</h1><p>Private access is ready. Live Yahoo data will be added in the next milestone.</p>
-<form method="post" action="/front-office/logout"><button type="submit">Sign out</button></form></main></body></html>`;
 
 function page(body, status = 200) {
     return new NextResponse(body, { status, headers: { ...PRIVATE_PAGE_HEADERS, 'Content-Type': 'text/html; charset=utf-8' } });
@@ -44,7 +37,28 @@ async function readPassword(request) {
 export async function GET(request) {
     const config = getFrontOfficeConfig();
     if (!config || !expectedRequestOrigin(request)) return page('Front Office is not configured.', 503);
-    return page(validSession(request.cookies.get(SESSION_COOKIE)?.value, config.sessionSecret) ? PRIVATE_PAGE : LOGIN_PAGE);
+    if (!validSession(request.cookies.get(SESSION_COOKIE)?.value, config.sessionSecret)) return page(loginPage, 401);
+    const yahoo = getYahooConfig();
+    if (!yahoo) return page(errorPage('Yahoo connection is not configured.'), 503);
+    let access;
+    try {
+        access = await currentAccess(config.sessionSecret);
+    } catch (error) {
+        if (error instanceof HostedAccessError && error.code === 'storage_error') {
+            return page(reconnectPage('The saved Yahoo connection cannot be opened. Reconnect to continue.'), 401);
+        }
+        return page(errorPage('Could not read the private Yahoo connection. Try again later.'), 503);
+    }
+    if (!access) return page(reconnectPage('Yahoo access has expired or is not connected. Reconnect to load current data.'), 401);
+    try {
+        const data = await fetchYahooLeague(access.accessToken);
+        return page(dashboardPage(data));
+    } catch (error) {
+        if (error instanceof YahooDataError && error.code === 'unauthorized') {
+            return page(reconnectPage('Yahoo rejected the current access. Reconnect to continue.'), 401);
+        }
+        return page(errorPage('Yahoo data could not be refreshed. Check again shortly.'), 502);
+    }
 }
 
 export async function POST(request) {

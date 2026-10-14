@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!-- Synthetic league and players; no private Yahoo data. -->
+<fixtures xmlns="http://fantasysports.yahooapis.com/fantasy/v2/base.rng">
+  <game><fantasy_content><game><game_key>999</game_key></game></fantasy_content></game>
+  <settings><fantasy_content><league>
+    <league_key>999.l.285072</league_key><name>Test League</name><current_week>5</current_week>
+    <settings><roster_positions>
+      <roster_position><position>QB</position><count>1</count></roster_position>
+      <roster_position><position>RB</position><count>2</count></roster_position>
+      <roster_position><position>BN</position><count>6</count></roster_position>
+    </roster_positions></settings>
+  </league></fantasy_content></settings>
+  <owned><fantasy_content><users><user><games><game><teams><team>
+    <team_key>999.l.285072.t.1</team_key><name>Test Team</name>
+  </team></teams></game></games></user></users></fantasy_content></owned>
+  <scoreboard><fantasy_content><league><scoreboard><matchups><matchup>
+    <week>5</week><teams>
+      <team><team_key>999.l.285072.t.1</team_key><name>Test Team</name>
+        <team_points><total>0</total></team_points><team_projected_points><total>110.5</total></team_projected_points>
+      </team>
+      <team><team_key>999.l.285072.t.2</team_key><name>Opponent &amp; Co</name>
+        <team_points><total>0</total></team_points><team_projected_points><total>105.0</total></team_projected_points>
+      </team>
+    </teams>
+  </matchup></matchups></scoreboard></league></fantasy_content></scoreboard>
+  <roster><fantasy_content><team><roster><coverage_type>week</coverage_type><week>5</week><players>
+    <player><player_key>999.p.1</player_key><name><full>Bye Quarterback</full></name>
+      <display_position>QB</display_position><selected_position><position>QB</position></selected_position>
+      <bye_weeks><week>5</week></bye_weeks>
+    </player>
+    <player><player_key>999.p.2</player_key><name><full>Questionable Runner</full></name>
+      <status>Q</status><display_position>RB</display_position><selected_position><position>RB</position></selected_position>
+      <bye_weeks><week>8</week></bye_weeks>
+    </player>
+    <player><player_key>999.p.3</player_key><name><full>Reserve Runner</full></name>
+      <status>IR</status><display_position>RB</display_position><selected_position><position>IR</position></selected_position>
+    </player>
+  </players></roster></team></fantasy_content></roster>
+  <opponent><fantasy_content><team><roster><week>5</week><players>
+    <player><player_key>999.p.4</player_key><name><full>Other Quarterback</full></name>
+      <display_position>QB</display_position><selected_position><position>QB</position></selected_position>
+    </player>
+  </players></roster></team></fantasy_content></opponent>
+</fixtures>
