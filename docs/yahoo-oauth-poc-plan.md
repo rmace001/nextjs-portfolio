@@ -36,7 +36,7 @@ The password form sends a same-origin POST over HTTPS. A valid password starts a
 
 ### Temporary access-token diagnostic (follow-up cleanup)
 
-The 403 investigation is resolved, but the current callback still displays **only the access token** on a private, no-store HTML page after a successful code exchange. This legacy diagnostic must be removed before the OAuth route becomes part of a durable hosted-dashboard workflow. The refresh token is discarded; the client secret, refresh token, full token response, and Fantasy response body are not included in the page. Yahoo's one-time authorization code still appears in the callback URL. The one-time state cookie is cleared; reloading the callback cannot retrieve the token again. Treat the displayed access token as a password, use it promptly (Yahoo documents about one hour of validity), and close the page afterward.
+The 403 investigation is resolved, but the original `/api/yahoo/connect` flow still displays **only the access token** on a private, no-store HTML page after a successful code exchange. This legacy diagnostic remains temporarily for the local Front Office sync. The new hosted Front Office connection flow uses a separate signed state cookie and never displays a token. Retire the diagnostic once the local workflow no longer depends on copying a short-lived token. The refresh token is discarded; the client secret, refresh token, full token response, and Fantasy response body are not included in the legacy page. Treat the displayed access token as a password, use it promptly, and close the page afterward.
 
 To test locally without putting the token in a command, shell history, or a `curl` argument, run these commands in a trusted terminal. Paste the access token at the hidden prompt, then press Enter:
 
@@ -56,20 +56,19 @@ The response may contain private Fantasy data; do not paste the token or full re
 
 Exit condition: Met. A complete browser authorization and authenticated Fantasy API request succeeded on `rogeliomc.com`.
 
-## Phase 4 — Add durable access for hosted use
+## Phase 4 — Hosted Front Office with manual Yahoo reauthorization (in progress)
 
-- Store the latest refresh token in a site-wide Netlify Blob (or a database if the app grows beyond one account), and replace it whenever Yahoo rotates it.
-- Keep token-writing routes unavailable to deploy previews, because site-wide Blobs are shared across deploy contexts.
-- Protect follow-up status and data routes, and test refresh, revocation, and reauthorization.
+- Require the existing Front Office owner session before beginning the hosted Yahoo OAuth flow. Bind the callback to a signed, short-lived state cookie.
+- Verify a read-only Fantasy request, then encrypt and save only the short-lived access token in a site-wide Netlify Blob. The production signing secret also derives the encryption key. The hosted routes reject preview hosts before accessing the store; keep the secret unavailable to deploy previews because site-wide Blobs are shared across deploys.
+- On a signed-in dashboard request, fetch and normalize the current Yahoo league, matchup, and rosters in memory. Preserve the 100-point D/ST safety rule and show a precise fetch time.
+- Return a sign-in page with HTTP 401 when the owner session expires. Return a Yahoo reconnect page with HTTP 401 when Yahoo access expires or is rejected. Do not refresh tokens automatically.
 
-Function memory can hold a fetched response only during a live request. It is not durable storage: a serverless function may restart or serve a later request on a different instance. A seamless private dashboard therefore needs durable server-side refresh-token storage and a private normalized snapshot or cache; browser clients must never receive Yahoo credentials or tokens.
+Function memory holds the fetched league data only for the request. The encrypted short-lived access token persists across serverless instances; no refresh token or raw Fantasy response is stored. Yahoo's one-hour token lifetime means the owner will reconnect Yahoo after expiry.
 
-Exit condition: an authenticated API read succeeds after the original access token expires, without another Yahoo consent prompt.
+Exit condition: the owner can sign in from another device, connect Yahoo, and see current private league data without a Yahoo token in the hosted browser response. Verify expired-session and expired-Yahoo recovery on production before marking this complete.
 
-## Phase 5 — Host the private Front Office dashboard
+## Phase 5 — Optional continuity improvements
 
-- Add an owner-only Front Office route on `rogeliomc.com`, using a durable password-session gate rather than the one-time OAuth diagnostic form.
-- Fetch and normalize only the Fantasy data the dashboard needs through a server-side boundary.
-- Keep credentials, refresh tokens, and private raw responses on the server. Render or return only the normalized dashboard data to the authenticated owner.
+If repeated Yahoo authorization becomes too cumbersome, add server-side refresh-token rotation and a private last-good snapshot. Both require their own recovery and concurrency design; neither is needed for the manually reauthorized dashboard.
 
-Exit condition: the owner can reach the dashboard from anywhere after authentication, and the dashboard refreshes authorized Yahoo data without receiving Yahoo secrets or tokens.
+Exit condition: the dashboard survives token expiry and temporary Yahoo outages without another authorization prompt when those behaviors are explicitly requested.
