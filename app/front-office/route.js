@@ -49,7 +49,13 @@ export async function GET(request) {
         }
         return page(errorPage('Could not read the private Yahoo connection. Try again later.'), 503);
     }
-    if (!access) return page(reconnectPage('Yahoo access has expired or is not connected. Reconnect to load current data.'), 401);
+    if (!access) {
+        const returnedFromYahoo = new URL(request.url).searchParams.get('yahoo') === 'connected';
+        const message = returnedFromYahoo
+            ? 'Yahoo authorization returned, but the saved connection is unavailable. Try connecting again.'
+            : 'Yahoo access has expired or is not connected. Reconnect to load current data.';
+        return page(reconnectPage(message), 401);
+    }
     try {
         const data = await fetchYahooLeague(access.accessToken);
         return page(dashboardPage(data));
@@ -78,7 +84,7 @@ export async function POST(request) {
     response.cookies.set(SESSION_COOKIE, createSession(config.sessionSecret), {
         httpOnly: true,
         secure: origin.startsWith('https:'),
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: SESSION_SECONDS
     });
