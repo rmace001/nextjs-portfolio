@@ -14,7 +14,7 @@ export async function POST(request) {
     response.cookies.set(SESSION_COOKIE, '', {
         httpOnly: true,
         secure: origin.startsWith('https:'),
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 0
     });

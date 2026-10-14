@@ -47,7 +47,7 @@ export async function GET(request) {
         } catch {
             return result('Yahoo connection could not be saved. Return to Front Office and try again.', 502);
         }
-        const response = NextResponse.redirect(new URL('/front-office', origin), 303);
+        const response = NextResponse.redirect(new URL('/front-office?yahoo=connected', origin), 303);
         for (const [name, value] of Object.entries(PRIVATE_HEADERS)) response.headers.set(name, value);
         clearState(response);
         return response;
