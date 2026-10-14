@@ -9,6 +9,7 @@ const now = 1_790_000_000_000;
 test('configuration is production-only on Netlify and requires separate strong secrets', () => {
     const config = { YAHOO_ADMIN_PASSWORD: password, FRONT_OFFICE_SESSION_SECRET: sessionSecret, CONTEXT: 'production' };
     assert.deepEqual(getFrontOfficeConfig(config), { password, sessionSecret });
+    assert.deepEqual(getFrontOfficeConfig({ ...config, CONTEXT: undefined, URL: 'https://rogeliomc.com' }), { password, sessionSecret });
     assert.equal(getFrontOfficeConfig({ ...config, CONTEXT: 'deploy-preview' }), null);
     assert.equal(getFrontOfficeConfig({ ...config, FRONT_OFFICE_SESSION_SECRET: 'too-short' }), null);
     assert.equal(getFrontOfficeConfig({ ...config, YAHOO_ADMIN_PASSWORD: 'short' }), null);
@@ -29,7 +30,10 @@ test('sessions survive requests but reject tampering, expiry, and far-future tim
 test('production requests use the registered domain and private responses do not cache', () => {
     const request = { url: 'https://internal.netlify.app/front-office' };
     assert.equal(expectedRequestOrigin(request, { CONTEXT: 'production' }), 'https://rogeliomc.com');
+    assert.equal(expectedRequestOrigin(request, { URL: 'https://nextjs-portfolio.netlify.app' }), 'https://rogeliomc.com');
+    assert.equal(expectedRequestOrigin(request, { URL: 'https://rogeliomc.com' }), 'https://rogeliomc.com');
     assert.equal(expectedRequestOrigin(request, { CONTEXT: 'deploy-preview' }), null);
+    assert.equal(expectedRequestOrigin(request, { CONTEXT: 'deploy-preview', URL: 'https://rogeliomc.com' }), null);
     assert.equal(expectedRequestOrigin({ url: 'http://localhost:3000/front-office' }, {}), 'http://localhost:3000');
     assert.equal(expectedRequestOrigin(request, {}), null);
     assert.match(PRIVATE_PAGE_HEADERS['Cache-Control'], /no-store/);
