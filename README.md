@@ -14,7 +14,7 @@ Netlify's [Next.js adapter](https://docs.netlify.com/build/frameworks/framework-
 
 The Yahoo Fantasy OAuth proof of concept is complete: the production callback completed an authenticated Fantasy API read and unblocked the companion Front Office local sync. [The plan](docs/yahoo-oauth-poc-plan.md) records the completed proof and the remaining work to host an owner-only dashboard on `rogeliomc.com`. No Yahoo credentials belong in this repository.
 
-The first hosted-dashboard slice adds a private `/front-office` entrance with a signed, 12-hour owner session. It uses `YAHOO_ADMIN_PASSWORD` and a separate `FRONT_OFFICE_SESSION_SECRET` of at least 32 random characters, configured only for the production deploy context. Until both are set, the route returns 503. The signed-in page is a placeholder; Yahoo data and automatic token renewal are later slices tracked in [the Front Office milestone](https://github.com/rmace001/nextjs-portfolio/issues/7).
+The first hosted-dashboard slice adds a private `/front-office` entrance with a signed, 12-hour owner session. It uses `YAHOO_ADMIN_PASSWORD` and a separate `FRONT_OFFICE_SESSION_SECRET` of at least 32 random characters, configured only for the production deploy context. The route also requires the exact `rogeliomc.com` site URL and incoming host; preview hosts return 503. The signed-in page is a placeholder; Yahoo data and automatic token renewal are later slices tracked in [the Front Office milestone](https://github.com/rmace001/nextjs-portfolio/issues/7).
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/netlify-templates/next-platform-starter)
 
