@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
-import { dashboardPage } from '../lib/front-office-view.mjs';
+import { bridgePage } from '../lib/front-office-view.mjs';
 import { fetchYahooLeague, YahooDataError } from '../lib/yahoo-league.mjs';
 import {
-    currentAccess, exchangeHostedCode, hostedCallbackPreflight, openAccess,
-    saveAccess, sealAccess, signedHostedState, verifyHostedRead
+    deleteLegacyAccess, exchangeHostedCode, hostedCallbackPreflight,
+    signedHostedState, verifyHostedRead
 } from '../lib/yahoo-hosted-access.mjs';
 import { createState, REDIRECT_URI } from '../lib/yahoo-oauth.mjs';
 
@@ -55,19 +55,12 @@ test('Yahoo authorization and malformed responses fail with safe errors', async 
         error => error instanceof YahooDataError && error.code === 'invalid_data');
 });
 
-test('dashboard escapes Yahoo strings and shows attribution and the captured safety rule', () => {
-    const page = dashboardPage({
-        week: 5, teamName: '<script>bad()</script>', leagueName: 'Test League', opponent: 'Opponent & Co',
-        fetchedAt: '2026-10-15T12:00:00.000Z', points: '0', opponentPoints: '0',
-        projectedPoints: '110.5', opponentProjectedPoints: '105.0',
-        roster: [{ name: '<img src=x>', position: 'QB', slot: 'QB', status: 'Q', byeWeek: null }],
-        opponentRoster: [], checks: ['Review <player>'], safetyPoints: 100
-    });
-    assert.doesNotMatch(page, /<script>|<img src=x>/);
-    assert.match(page, /&lt;script&gt;bad\(\)&lt;\/script&gt;/);
-    assert.match(page, /100 points/);
-    assert.match(page, /Fantasy data provided by/);
-    assert.doesNotMatch(page, /secret-token/);
+test('front-office bridge page tells the owner how to save locally and does not expose a token', () => {
+    const page = bridgePage('Connected.');
+    assert.match(page, /Yahoo authentication bridge/);
+    assert.match(page, /python3 yahoo_token_receiver\.py/);
+    assert.match(page, /Connect Yahoo/);
+    assert.doesNotMatch(page, /This matchup|Your roster|Opponent roster|access_token=/i);
 });
 
 test('hosted OAuth state is signed and cannot bind an arbitrary Yahoo account', () => {
@@ -78,10 +71,13 @@ test('hosted OAuth state is signed and cannot bind an arbitrary Yahoo account', 
     assert.equal(hostedCallbackPreflight(params, cookie, secret), null);
     assert.equal(hostedCallbackPreflight(params, signedHostedState(state, 'another-secret-at-least-32-characters'), secret).status, 400);
     assert.equal(hostedCallbackPreflight(new URLSearchParams({ state: createState(), code: 'fake-code' }), cookie, secret).status, 400);
+    const duplicate = new URLSearchParams({ state, code: 'fake-code' });
+    duplicate.append('state', state);
+    assert.equal(hostedCallbackPreflight(duplicate, cookie, secret).status, 400);
+    assert.equal(hostedCallbackPreflight(new URLSearchParams({ state, error: 'access_denied' }), cookie, secret).status, 400);
 });
 
-test('hosted authorization stores only encrypted, short-lived access and requires reconnect after expiry', async () => {
-    const secret = 'fake-session-secret-at-least-32-characters';
+test('hosted authorization returns only a bounded short-lived access token and removes legacy persistence', async () => {
     const config = { clientId: 'fake-id', clientSecret: 'fake-secret', redirectUri: REDIRECT_URI };
     const calls = [];
     const fakeFetch = async (url, options) => {
@@ -94,20 +90,15 @@ test('hosted authorization stores only encrypted, short-lived access and require
     await verifyHostedRead(record.accessToken, fakeFetch);
     assert.equal(calls[0].options.body.get('grant_type'), 'authorization_code');
     assert.equal(calls[1].options.headers.Authorization, 'Bearer fake-access-token');
-    assert.equal(record.refreshToken, undefined);
+    assert.deepEqual(record, { accessToken: 'fake-access-token', expiresAt: now + 3600_000 });
 
     const store = {
-        saved: null,
-        async setJSON(key, value) { assert.equal(key, 'owner-access-v1'); this.saved = value; },
-        async get(key) { assert.equal(key, 'owner-access-v1'); return this.saved; }
+        deleted: null,
+        async delete(key) { this.deleted = key; }
     };
-    await saveAccess(record, secret, store);
-    assert.ok(!JSON.stringify(store.saved).includes('fake-access-token'));
-    assert.ok(!JSON.stringify(store.saved).includes('fake-refresh-token'));
-    assert.deepEqual(openAccess(store.saved, secret), record);
-    assert.deepEqual(await currentAccess(secret, store, now), record);
-    assert.equal(await currentAccess(secret, store, now + 3600_000), null);
-    assert.throws(() => openAccess({ ...store.saved, ciphertext: 'tampered' }, secret), /storage_error/);
-    assert.throws(() => openAccess(store.saved, 'different-secret-at-least-32-characters'), /storage_error/);
-    assert.deepEqual(sealAccess(record, secret).version, 1);
+    await deleteLegacyAccess(store);
+    assert.equal(store.deleted, 'owner-access-v1');
+    await assert.rejects(exchangeHostedCode('fake-code', config, async () => ({
+        ok: true, json: async () => ({ access_token: 'fake-access-token', expires_in: 3601 })
+    }), now), /token_error/);
 });

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSession, expectedRequestOrigin, getFrontOfficeConfig, PRIVATE_PAGE_HEADERS, SESSION_COOKIE, SESSION_SECONDS, validSession } from '../../lib/front-office-session.mjs';
 import { getYahooConfig, validAdminPassword } from '../../lib/yahoo-oauth.mjs';
-import { currentAccess, HostedAccessError } from '../../lib/yahoo-hosted-access.mjs';
-import { fetchYahooLeague, YahooDataError } from '../../lib/yahoo-league.mjs';
-import { dashboardPage, errorPage, loginPage, reconnectPage } from '../../lib/front-office-view.mjs';
+import { bridgePage, loginPage } from '../../lib/front-office-view.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,33 +36,8 @@ export async function GET(request) {
     const config = getFrontOfficeConfig();
     if (!config || !expectedRequestOrigin(request)) return page('Front Office is not configured.', 503);
     if (!validSession(request.cookies.get(SESSION_COOKIE)?.value, config.sessionSecret)) return page(loginPage, 401);
-    const yahoo = getYahooConfig();
-    if (!yahoo) return page(errorPage('Yahoo connection is not configured.'), 503);
-    let access;
-    try {
-        access = await currentAccess(config.sessionSecret);
-    } catch (error) {
-        if (error instanceof HostedAccessError && error.code === 'storage_error') {
-            return page(reconnectPage('The saved Yahoo connection cannot be opened. Reconnect to continue.'), 401);
-        }
-        return page(errorPage('Could not read the private Yahoo connection. Try again later.'), 503);
-    }
-    if (!access) {
-        const returnedFromYahoo = new URL(request.url).searchParams.get('yahoo') === 'connected';
-        const message = returnedFromYahoo
-            ? 'Yahoo authorization returned, but the saved connection is unavailable. Try connecting again.'
-            : 'Yahoo access has expired or is not connected. Reconnect to load current data.';
-        return page(reconnectPage(message), 401);
-    }
-    try {
-        const data = await fetchYahooLeague(access.accessToken);
-        return page(dashboardPage(data));
-    } catch (error) {
-        if (error instanceof YahooDataError && error.code === 'unauthorized') {
-            return page(reconnectPage('Yahoo rejected the current access. Reconnect to continue.'), 401);
-        }
-        return page(errorPage('Yahoo data could not be refreshed. Check again shortly.'), 502);
-    }
+    if (!getYahooConfig()) return page('Yahoo connection is not configured.', 503);
+    return page(bridgePage());
 }
 
 export async function POST(request) {
