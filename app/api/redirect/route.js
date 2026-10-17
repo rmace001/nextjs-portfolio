@@ -4,7 +4,7 @@ import {
     expectedRequestOrigin, getFrontOfficeConfig, SESSION_COOKIE, validSession
 } from '../../../lib/front-office-session.mjs';
 import {
-    deleteLegacyAccess, exchangeHostedCode, HOSTED_STATE_COOKIE,
+    exchangeHostedCode, HOSTED_STATE_COOKIE,
     hostedCallbackPreflight, verifyHostedRead
 } from '../../../lib/yahoo-hosted-access.mjs';
 
@@ -44,7 +44,6 @@ export async function GET(request) {
     try {
         access = await exchangeHostedCode(params.get('code'), yahoo);
         await verifyHostedRead(access.accessToken);
-        await deleteLegacyAccess();
     } catch {
         return result('Yahoo authorization could not be verified. Return to Front Office and try again.', 502);
     }
