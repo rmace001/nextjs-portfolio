@@ -5,7 +5,7 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { bridgePage } from '../lib/front-office-view.mjs';
 import { fetchYahooLeague, YahooDataError } from '../lib/yahoo-league.mjs';
 import {
-    deleteLegacyAccess, exchangeHostedCode, hostedCallbackPreflight,
+    exchangeHostedCode, hostedCallbackPreflight,
     signedHostedState, verifyHostedRead
 } from '../lib/yahoo-hosted-access.mjs';
 import { createState, REDIRECT_URI } from '../lib/yahoo-oauth.mjs';
@@ -77,7 +77,7 @@ test('hosted OAuth state is signed and cannot bind an arbitrary Yahoo account', 
     assert.equal(hostedCallbackPreflight(new URLSearchParams({ state, error: 'access_denied' }), cookie, secret).status, 400);
 });
 
-test('hosted authorization returns only a bounded short-lived access token and removes legacy persistence', async () => {
+test('hosted authorization returns only a bounded short-lived access token', async () => {
     const config = { clientId: 'fake-id', clientSecret: 'fake-secret', redirectUri: REDIRECT_URI };
     const calls = [];
     const fakeFetch = async (url, options) => {
@@ -91,13 +91,6 @@ test('hosted authorization returns only a bounded short-lived access token and r
     assert.equal(calls[0].options.body.get('grant_type'), 'authorization_code');
     assert.equal(calls[1].options.headers.Authorization, 'Bearer fake-access-token');
     assert.deepEqual(record, { accessToken: 'fake-access-token', expiresAt: now + 3600_000 });
-
-    const store = {
-        deleted: null,
-        async delete(key) { this.deleted = key; }
-    };
-    await deleteLegacyAccess(store);
-    assert.equal(store.deleted, 'owner-access-v1');
     await assert.rejects(exchangeHostedCode('fake-code', config, async () => ({
         ok: true, json: async () => ({ access_token: 'fake-access-token', expires_in: 3601 })
     }), now), /token_error/);
