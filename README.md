@@ -10,7 +10,7 @@ Implicit usage means you're using any Next.js functionality and everything "just
 
 ## Deploying to Netlify
 
-Netlify's [Next.js adapter](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/) handles Route Handlers and other server-side features. The project pins Node.js 24 in `.nvmrc` and uses webpack for production builds.
+Netlify's [Next.js adapter](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/) handles Route Handlers and other server-side features. The project pins Node.js 26.12.1 in `.nvmrc` and uses webpack for production builds.
 
 The Yahoo OAuth integration is an owner-only authentication bridge for Rogi's local fantasy agents. A terminal-started helper receives a short-lived access token from a **Save token locally** button and writes it to the companion project's Git-ignored `.env`. The callback page never displays the token or copies it to the clipboard. The current workflow and security boundaries are in the [Front Office specification](https://github.com/rmace001/fantasy-football-front-office/blob/main/spec.md). No Yahoo credentials belong in this repository.
 
