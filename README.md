@@ -1,5 +1,7 @@
 # Next.js portfolio on Netlify
 
+*Requires `node@26.12.1`*
+
 [Live Demo](https://nextjs-platform-starter.netlify.app/)
 
 A portfolio based on Next.js 16 (App Router), Tailwind CSS 4, daisyUI 5, and [Netlify platform primitives](https://docs.netlify.com/start/core-concepts/primitives/) (Edge Functions, Image CDN, and Blobs).
