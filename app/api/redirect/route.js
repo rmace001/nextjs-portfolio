@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { tokenHandoffPage, getYahooConfig, PRIVATE_HEADERS } from '../../../lib/yahoo-oauth.mjs';
+import { getYahooConfig, PRIVATE_HEADERS } from '../../../lib/yahoo-oauth.mjs';
+import { verifiedHandoffPage } from '../../../lib/yahoo-callback.mjs';
 import {
     expectedRequestOrigin, getFrontOfficeConfig, SESSION_COOKIE, validSession
 } from '../../../lib/front-office-session.mjs';
-import {
-    exchangeHostedCode, HOSTED_STATE_COOKIE,
-    hostedCallbackPreflight, verifyHostedRead
-} from '../../../lib/yahoo-hosted-access.mjs';
+import { HOSTED_STATE_COOKIE, hostedCallbackPreflight } from '../../../lib/yahoo-hosted-access.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,19 +38,11 @@ export async function GET(request) {
     const preflight = hostedCallbackPreflight(params, stateCookie, frontOffice.sessionSecret);
     if (preflight) return result(preflight.message, preflight.status);
 
-    let access;
-    try {
-        access = await exchangeHostedCode(params.get('code'), yahoo);
-        await verifyHostedRead(access.accessToken);
-    } catch {
-        return result('Yahoo authorization could not be verified. Return to Front Office and try again.', 502);
-    }
-
     let body;
     try {
-        body = tokenHandoffPage(access.accessToken, access.expiresAt);
+        body = await verifiedHandoffPage(params.get('code'), yahoo);
     } catch {
-        return result('Yahoo authorization returned an unusable token. Reconnect and try again.', 502);
+        return result('Yahoo authorization could not be verified. Return to Front Office and try again.', 502);
     }
     const response = new NextResponse(body, {
         status: 200,

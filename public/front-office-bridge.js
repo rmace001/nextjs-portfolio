@@ -1,9 +1,10 @@
 (() => {
     history.replaceState(null, '', '/api/redirect');
     const tokenElement = document.querySelector('meta[name="yahoo-access-token"]');
+    const refreshTokenElement = document.querySelector('meta[name="yahoo-refresh-token"]');
     const button = document.querySelector('#save-token');
     const status = document.querySelector('#save-status');
-    if (!tokenElement || !button || !status) return;
+    if (!tokenElement || !refreshTokenElement || !button || !status) return;
 
     const receiver = 'http://127.0.0.1:8765';
     let sending = false;
@@ -11,8 +12,9 @@
     button.addEventListener('click', async () => {
         if (sending) return;
         const accessToken = tokenElement.content;
-        if (!accessToken) {
-            status.textContent = 'This handoff has already been used. Reconnect Yahoo to get a fresh token.';
+        const refreshToken = refreshTokenElement.content;
+        if (!accessToken || !refreshToken) {
+            status.textContent = 'This handoff has already been used. Reconnect Yahoo to get fresh credentials.';
             button.disabled = true;
             return;
         }
@@ -39,7 +41,10 @@
                     'Content-Type': 'application/json',
                     'X-Front-Office-Challenge': challengeData.challenge
                 },
-                body: JSON.stringify({ access_token: accessToken }),
+                body: JSON.stringify({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                }),
                 signal: AbortSignal.timeout(15000)
             });
             if (!saveResponse.ok) throw new Error();
@@ -47,9 +52,10 @@
             if (result.saved !== true) throw new Error();
 
             tokenElement.content = '';
-            status.textContent = 'Token saved to the project .env file. You can close this page.';
+            refreshTokenElement.content = '';
+            status.textContent = 'Yahoo credentials saved to the project .env file. You can close this page.';
         } catch {
-            status.textContent = 'Could not save locally. Make sure python3 yahoo_token_receiver.py is running, then try again.';
+            status.textContent = 'Could not save locally. Make sure bin/fantasy-office receiver is running, then try again.';
             button.disabled = false;
         } finally {
             sending = false;
